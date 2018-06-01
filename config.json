@@ -1,0 +1,31 @@
+[
+  {
+    "title": "Apache",
+    "port": 8443,
+    "server": "localhost",
+    "host": [
+      {
+        "hostname": "apache-server-1.example.com",
+        "key": "/path/to/privateKey.pem",
+        "cert": "/path/to/cert.pem"
+      },
+      {
+        "hostname": "apache-server-2.example.com",
+        "key": "/etc/letsencrypt/live/apache-server-2.example.com/privateKey.pem",
+        "cert": "/etc/letsencrypt/live/apache-server-2.example.com/cert.pem"
+      }
+    ]
+  },
+  {
+    "title": "Node.js",
+    "port": 8444,
+    "server": "localhost",
+    "host": [
+      {
+        "hostname": "nodejs-server.example.com",
+        "key": "/path/to/privaveKey.pem",
+        "cert": "/path/to/cert.pem"
+      }
+    ]
+  }
+]

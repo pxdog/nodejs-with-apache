@@ -1,0 +1,28 @@
+{
+  "name": "nodejs-with-apache",
+  "version": "1.0.0",
+  "description": "Node.js, Apache and other servers can coexist via this proxy server.",
+  "main": "proxy-server.js",
+  "scripts": {
+    "test": "sudo node proxy-server.js test",
+    "start": "sudo forever start proxy-server.js",
+    "stop": "sudo forever stop proxy-server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pxdog/nodejs-with-apache.git"
+  },
+  "keywords": [
+    "Node.js",
+    "Apache",
+    "Proxy",
+    "Coexistence",
+    "HTTPS"
+  ],
+  "author": "pxdog",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pxdog/nodejs-with-apache/issues"
+  },
+  "homepage": "https://github.com/pxdog/nodejs-with-apache#readme"
+}
