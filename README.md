@@ -97,6 +97,9 @@ foreverがインストールされていない場合は、インストールを�
     git clone https://github.com/pxdog/nodejs-with-apache
     cd nodejs-with-apache
 
+    # 便利な forever のインストール
+    npm install forever
+    
     # test / テスト リクエストされたホスト名・パスと、アクセスするクライアントのIP Addressを表示 
     # 以下の二つのコマンドは同じ
     # sudo node proxy-server.js test
