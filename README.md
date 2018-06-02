@@ -1,22 +1,22 @@
 ## Contents / 目次
 
-- [For what / 何のために](##-For-what-/-何のために)
+- [For what / 何のために](## For-what-/-何のために)
 
-- [For example / 例](##-For-example-/-例)
+- [For example / 例](## For-example-/-例)
 
-- [Ready and execute / 準備と実行](##-Ready-and-execute-/-準備と実行)
+- [Ready and execute / 準備と実行](## Ready-and-execute-/-準備と実行)
 
-  - [Edit config.json / config.jsonファイルの編集](###-Edit-config.json-/-config.jsonファイルの編集)
+  - [Edit config.json / config.jsonファイルの編集](### Edit-config.json-/-config.jsonファイルの編集)
 
-  - [Change Apache port / Apacheのポート変更](###-Change-Apache-port-/-Apacheのポート変更)
+  - [Change Apache port / Apacheのポート変更](### Change-Apache-port-/-Apacheのポート変更)
 
-  - [Change Node.js port / Node.jsのポート変更](###-Change-Node.js-port-/-Node.jsのポート変更)
+  - [Change Node.js port / Node.jsのポート変更](### Change-Node.js-port-/-Node.jsのポート変更)
 
-  - [Run! / 実行！](###-Run!-/-実行！)
+  - [Run! / 実行！](### Run!-/-実行！)
 
-- [How it works / どのような仕組みか](##-How-it-works-/-どのような仕組みか)
+- [How it works / どのような仕組みか](## How-it-works-/-どのような仕組みか)
 
-- [Warning / 注意](##-Warning-/-注意)
+- [Warning / 注意](## Warning-/-注意)
 
 
 
@@ -98,7 +98,8 @@ foreverがインストールされていない場合は、インストールを�
     cd nodejs-with-apache
 
     # 便利な forever のインストール
-    npm install forever
+    # foreverコマンドが使えるようになります
+    sudo npm install forever -g
     
     # test / テスト リクエストされたホスト名・パスと、アクセスするクライアントのIP Addressを表示 
     # 以下の二つのコマンドは同じ

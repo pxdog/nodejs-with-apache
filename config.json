@@ -2,7 +2,6 @@
   {
     "title": "Apache",
     "port": 8443,
-    "server": "localhost",
     "host": [
       {
         "hostname": "apache-server-1.example.com",
@@ -11,7 +10,7 @@
       },
       {
         "hostname": "apache-server-2.example.com",
-        "key": "/etc/letsencrypt/live/apache-server-2.example.com/privateKey.pem",
+        "key": "/etc/letsencrypt/live/apache-server-2.example.com/privkey.pem",
         "cert": "/etc/letsencrypt/live/apache-server-2.example.com/cert.pem"
       }
     ]
@@ -19,7 +18,6 @@
   {
     "title": "Node.js",
     "port": 8444,
-    "server": "localhost",
     "host": [
       {
         "hostname": "nodejs-server.example.com",

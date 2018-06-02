@@ -6,6 +6,7 @@
  * LastUpdate: 2018/06/01
  * Licence: MIT
  * Usage: sudo npm run (sudo forever start proxy-server.js)
+ * Version: v1.0.1
  */
 
 const https = require('https')
@@ -17,7 +18,6 @@ const zlib = require('zlib')
 
 const config = require('./config.json')
 const DEFAULT_PORT = 8443
-const DEFAULT_SERVER = 'localhost'
 const PROXY_SERVER_PORT = 443
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
@@ -60,13 +60,11 @@ var credential = {
 https.createServer(credential, function (req, res) {
   const hostname = req.headers.host.split(":")[0]
   let port = DEFAULT_PORT
-  let server = DEFAULT_SERVER
 
   /** check request's hostname is in config.json or not */
   for (let group in groupList) {
     if (hostname in groupList[group]['list']) {
       port = groupList[group]['port']
-      server = groupList[group]['server']
     }
   }
 
@@ -77,7 +75,7 @@ https.createServer(credential, function (req, res) {
 
   if (TEST_MODE) {
     /** show where proxy access */
-    const target = 'https://' + server + ':' + port + parsedUrl.pathname + queryString
+    const target = 'https://' + hostname + ':' + port + parsedUrl.pathname + queryString
     console.log('request to: ' + target)
     console.log('remote address: ' + remoteAddress)  
   }
@@ -93,7 +91,8 @@ https.createServer(credential, function (req, res) {
     hostname: hostname,
     port: port,
     path: parsedUrl.pathname + queryString,
-    headers: headers
+    headers: headers,
+    method: req.method
   }
 
   proxyReq = https.request(option, function (proxyRes) {
@@ -106,6 +105,13 @@ https.createServer(credential, function (req, res) {
       res.end()
     })
   })
+  /** Transfer post data from client to server */
+  req.on('data', function (data) {
+    proxyReq.write(data);
+  })
+  req.on('end', function () {
+    proxyReq.end()
+  })
 
   /** if error proxy returns 502 Bad Gateway */
   proxyReq.on('error', function (err) {
@@ -113,8 +119,6 @@ https.createServer(credential, function (req, res) {
     res.writeHead(502, {})
     res.end('502 Bad Gateway')
   })
-
-  proxyReq.end()
 
 }).listen(PROXY_SERVER_PORT, function () {
   /** this proxy server uses 443 so privilege is necessary (use sudo) */

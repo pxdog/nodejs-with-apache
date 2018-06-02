@@ -2,7 +2,6 @@
   {
     "title": "My Apache Sever!",
     "port": 8443,
-    "server": "localhost",
     "host": [
       {
         "hostname": "apache-server-1.example.com",
@@ -17,9 +16,8 @@
     ]
   },
   {
-    "title": "React js sample",
+    "title": "React.js sample",
     "port": 8444,
-    "server": "localhost",
     "host": [
       {
         "hostname": "react-sample.example.com",
@@ -31,7 +29,6 @@
   {
     "title": "whatever title is good and the same port/server is ok",
     "port": 8444,
-    "server": "localhost",
     "host": [
       {
         "hostname": "whatever.example.com",
