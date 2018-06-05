@@ -30,7 +30,7 @@ const start = (param) => {
   const PROXY_SERVER_PORT = 443
   
   /** argments */
-  const config = param.config == null? './config.json': param.config
+  const config = param.config == null? require('./config.json'): param.config
   const TLS_REJECT = param.tls_reject == true? true: false
   if(TLS_REJECT === true) {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
@@ -47,10 +47,14 @@ const start = (param) => {
     for (let index in groupJson['host']) {
       const hostJson = groupJson['host'][index]
       /** reading certificate file may need privilege */
-      hostList.list[hostJson['hostname']] = tls.createSecureContext({
-        key: fs.readFileSync(hostJson['key']),
-        cert: fs.readFileSync(hostJson['cert'])
-      })
+      hostList.list[hostJson['hostname']] = {
+        credential: tls.createSecureContext({
+          key: fs.readFileSync(hostJson['key']),
+          cert: fs.readFileSync(hostJson['cert'])
+        }),
+        denied: hostJson['denied'],
+        allowed: hostJson['allowed']
+      }
     }
   }
   console.log('config loaded: ' + util.inspect(groupList))
@@ -60,7 +64,7 @@ const start = (param) => {
     SNICallback: function (hostname, cb) {
       for (let group in groupList) {
         if (hostname in groupList[group]['list']) {
-          return cb(null, groupList[group]['list'][hostname])
+          return cb(null, groupList[group]['list'][hostname]['credential'])
         }
       }
       /** this shows "protocol not supported" on browser */
@@ -72,18 +76,44 @@ const start = (param) => {
   https.createServer(credential, function (req, res) {
     const hostname = req.headers.host.split(":")[0]
     let port = DEFAULT_PORT
+    let denied = []
+    let allowed = []
 
     /** check request's hostname is in config.json or not */
     for (let group in groupList) {
       if (hostname in groupList[group]['list']) {
         port = groupList[group]['port']
+        denied = groupList[group]['list'][hostname]['denied']
+        allowed = groupList[group]['list'][hostname]['allowed']          
+        break
       }
     }
+
 
     const queryString = req.url.indexOf('?') >= 0 ? req.url.replace(/^.*\?/, '?') : ''
     const parsedUrl = url.parse(req.url)
     /** IPv4 only */
     const remoteAddress = req.connection.remoteAddress.replace(/^::ffff:/, '')
+
+    if(denied != null) {
+      if(denied.indexOf(remoteAddress) >= 0) {
+        /** if "denied" exists and ip is in denied then exit */
+        console.log('reject from ' + remoteAddress + ' to ' + hostname)
+        res.writeHead(403, {})
+        res.end('403 Forbidden')
+        return         
+      }
+    }
+    if(allowed != null) {
+      if(allowed.indexOf(remoteAddress) < 0) {
+        /** if "allowed" exists and ip is not in allowed then exit */
+        console.log('reject from ' + remoteAddress + ' to ' + hostname)
+        res.writeHead(403, {})
+        res.end('403 Forbidden')
+        return 
+      }
+    }
+
 
     if (TEST_MODE) {
       /** show where proxy access */

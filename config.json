@@ -6,12 +6,21 @@
       {
         "hostname": "apache-server-1.example.com",
         "key": "/path/to/privateKey.pem",
-        "cert": "/path/to/cert.pem"
+        "cert": "/path/to/cert.pem",
+        "allowed": [
+          "192.168.2.105",
+          "127.0.0.1"
+        ],
+        "_comment": "allowed only reject ip not in allowed"
       },
       {
         "hostname": "apache-server-2.example.com",
         "key": "/etc/letsencrypt/live/apache-server-2.example.com/privkey.pem",
-        "cert": "/etc/letsencrypt/live/apache-server-2.example.com/cert.pem"
+        "cert": "/etc/letsencrypt/live/apache-server-2.example.com/cert.pem",
+        "denied": [
+          "192.168.2.111"
+        ],
+        "_comment": "denied only reject only ip in denied"
       }
     ]
   },
@@ -22,7 +31,15 @@
       {
         "hostname": "nodejs-server.example.com",
         "key": "/path/to/privaveKey.pem",
-        "cert": "/path/to/cert.pem"
+        "cert": "/path/to/cert.pem",
+        "denied": [
+          "192.168.2.111"
+        ],
+        "allowed": [
+          "192.168.2.105",
+          "127.0.0.1"
+        ],
+        "_comment": "denied and allowed allow only ip in allowed"
       }
     ]
   }
