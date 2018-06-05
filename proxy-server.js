@@ -6,122 +6,151 @@
  * LastUpdate: 2018/06/01
  * Licence: MIT
  * Usage: sudo npm run (sudo forever start proxy-server.js)
- * Version: v1.0.1
+ * Version: v2.0.0
  */
 
-const https = require('https')
-const url = require('url')
-const fs = require('fs')
-const tls = require('tls')
-const util = require('util')
-const zlib = require('zlib')
 
-const config = require('./config.json')
-const DEFAULT_PORT = 8443
-const PROXY_SERVER_PORT = 443
-
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
-let TEST_MODE = false
-if(process.argv.length > 2 && process.argv[2] === 'test') {
-  TEST_MODE = true
-}
-console.log('TEST_MODE: ' + TEST_MODE)
-
-/** read config.json to groupList */
-let groupList = {}
-for (let group in config) {
-  const groupJson = config[group]
-  let hostList = { port: groupJson['port'], list: [] }
-  groupList[groupJson['title']] = hostList
-  for (let index in groupJson['host']) {
-    const hostJson = groupJson['host'][index]
-    /** reading certificate file may need privilege */
-    hostList.list[hostJson['hostname']] = tls.createSecureContext({
-      key: fs.readFileSync(hostJson['key']),
-      cert: fs.readFileSync(hostJson['cert'])
-    })
+/**
+ * param = {
+ *   config: config file json  ex. require('./config.json')
+ *   tls_reject: ignore unauthorized tls  ex. true / false
+ *   test_mode: test mode shows target url and remote ip  ex. true / false
+ * }
+ * 
+ * */
+const start = (param) => {
+  const https = require('https')
+  const url = require('url')
+  const fs = require('fs')
+  const tls = require('tls')
+  const util = require('util')
+  const zlib = require('zlib')
+  
+  const DEFAULT_PORT = 8443
+  const PROXY_SERVER_PORT = 443
+  
+  /** argments */
+  const config = param.config == null? './config.json': param.config
+  const TLS_REJECT = param.tls_reject == true? true: false
+  if(TLS_REJECT === true) {
+    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0'
   }
-}
-console.log('config loaded: ' + util.inspect(groupList))
+  const TEST_MODE = param.test_mode == true? true: false
+  console.log('TLS_REJECT_UNAUTHORIZED: ' + TLS_REJECT)  
+  console.log('TEST_MODE: ' + TEST_MODE)  
 
-/** https server setting */
-var credential = {
-  SNICallback: function (hostname, cb) {
+  let groupList = {}
+  for (let group in config) {
+    const groupJson = config[group]
+    let hostList = { port: groupJson['port'], list: [] }
+    groupList[groupJson['title']] = hostList
+    for (let index in groupJson['host']) {
+      const hostJson = groupJson['host'][index]
+      /** reading certificate file may need privilege */
+      hostList.list[hostJson['hostname']] = tls.createSecureContext({
+        key: fs.readFileSync(hostJson['key']),
+        cert: fs.readFileSync(hostJson['cert'])
+      })
+    }
+  }
+  console.log('config loaded: ' + util.inspect(groupList))
+
+  /** https server setting */
+  var credential = {
+    SNICallback: function (hostname, cb) {
+      for (let group in groupList) {
+        if (hostname in groupList[group]['list']) {
+          return cb(null, groupList[group]['list'][hostname])
+        }
+      }
+      /** this shows "protocol not supported" on browser */
+      return cb(null, null)
+    }
+  }
+
+  /** https server */
+  https.createServer(credential, function (req, res) {
+    const hostname = req.headers.host.split(":")[0]
+    let port = DEFAULT_PORT
+
+    /** check request's hostname is in config.json or not */
     for (let group in groupList) {
       if (hostname in groupList[group]['list']) {
-        return cb(null, groupList[group]['list'][hostname])
+        port = groupList[group]['port']
       }
     }
-    throw Error('hostname not found')
-  }
+
+    const queryString = req.url.indexOf('?') >= 0 ? req.url.replace(/^.*\?/, '?') : ''
+    const parsedUrl = url.parse(req.url)
+    /** IPv4 only */
+    const remoteAddress = req.connection.remoteAddress.replace(/^::ffff:/, '')
+
+    if (TEST_MODE) {
+      /** show where proxy access */
+      const target = 'https://' + hostname + ':' + port + parsedUrl.pathname + queryString
+      console.log('request to: ' + target)
+      console.log('remote address: ' + remoteAddress)
+    }
+
+    let proxyReq = null
+    let headers = req.headers
+
+    /** act like a proxy server */
+    if (headers['x-forwarded-for'] == null) {
+      headers['x-forwarded-for'] = remoteAddress
+    }
+    const option = {
+      hostname: hostname,
+      port: port,
+      path: parsedUrl.pathname + queryString,
+      headers: headers,
+      method: req.method
+    }
+
+    proxyReq = https.request(option, function (proxyRes) {
+      /** return statusCode and headers to client as it is from server */
+      res.writeHead(proxyRes.statusCode, proxyRes.headers)
+      proxyRes.on('data', function (data) {
+        res.write(data)
+      })
+      proxyRes.on('end', function () {
+        res.end()
+      })
+    })
+    /** Transfer post data from client to server */
+    req.on('data', function (data) {
+      proxyReq.write(data);
+    })
+    req.on('end', function () {
+      proxyReq.end()
+    })
+
+    /** if error proxy returns 502 Bad Gateway */
+    proxyReq.on('error', function (err) {
+      console.log('error: ' + err.message)
+      res.writeHead(502, {})
+      res.end('502 Bad Gateway')
+    })
+
+  }).listen(PROXY_SERVER_PORT, function () {
+    /** this proxy server uses 443 so privilege is necessary (use sudo) */
+    console.log('proxy server listen to port ' + PROXY_SERVER_PORT)
+  })
+
 }
 
-/** https server */
-https.createServer(credential, function (req, res) {
-  const hostname = req.headers.host.split(":")[0]
-  let port = DEFAULT_PORT
-
-  /** check request's hostname is in config.json or not */
-  for (let group in groupList) {
-    if (hostname in groupList[group]['list']) {
-      port = groupList[group]['port']
-    }
+if(module.parent) {
+  module.exports = {
+    start: start
   }
-
-  const queryString = req.url.indexOf('?') >= 0 ? req.url.replace(/^.*\?/, '?') : ''
-  const parsedUrl = url.parse(req.url)
-  /** IPv4 only */
-  const remoteAddress = req.connection.remoteAddress.replace(/^::ffff:/, '')
-
-  if (TEST_MODE) {
-    /** show where proxy access */
-    const target = 'https://' + hostname + ':' + port + parsedUrl.pathname + queryString
-    console.log('request to: ' + target)
-    console.log('remote address: ' + remoteAddress)  
+} else {
+  const test_mode = false;
+  if (process.argv.length > 2 && process.argv[2] === 'test') {
+    test_mode = true
   }
-
-  let proxyReq = null
-  let headers = req.headers
-
-  /** act like a proxy server */
-  if (headers['x-forwarded-for'] == null) {
-    headers['x-forwarded-for'] = remoteAddress
-  }
-  const option = {
-    hostname: hostname,
-    port: port,
-    path: parsedUrl.pathname + queryString,
-    headers: headers,
-    method: req.method
-  }
-
-  proxyReq = https.request(option, function (proxyRes) {
-    /** return statusCode and headers to client as it is from server */
-    res.writeHead(proxyRes.statusCode, proxyRes.headers)
-    proxyRes.on('data', function (data) {
-      res.write(data)
-    })
-    proxyRes.on('end', function () {
-      res.end()
-    })
+  start({
+    config: require('./config.json'), 
+    test_mode: test_mode,
+    tls_reject: true
   })
-  /** Transfer post data from client to server */
-  req.on('data', function (data) {
-    proxyReq.write(data);
-  })
-  req.on('end', function () {
-    proxyReq.end()
-  })
-
-  /** if error proxy returns 502 Bad Gateway */
-  proxyReq.on('error', function (err) {
-    console.log('error: ' + err.message)
-    res.writeHead(502, {})
-    res.end('502 Bad Gateway')
-  })
-
-}).listen(PROXY_SERVER_PORT, function () {
-  /** this proxy server uses 443 so privilege is necessary (use sudo) */
-  console.log('proxy server listen to port ' + PROXY_SERVER_PORT)
-})
-
+}

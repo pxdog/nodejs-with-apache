@@ -1,22 +1,22 @@
 ## Contents / 目次
 
-- [For what / 何のために](## For-what-/-何のために)
+- [For what / 何のために](##-For-what-/-何のために)
 
-- [For example / 例](## For-example-/-例)
+- [For example / 例](##-For-example-/-例)
 
-- [Ready and execute / 準備と実行](## Ready-and-execute-/-準備と実行)
+- [Ready and execute / 準備と実行](##-Ready-and-execute-/-準備と実行)
 
-  - [Edit config.json / config.jsonファイルの編集](### Edit-config.json-/-config.jsonファイルの編集)
+  - [Edit config.json / config.jsonファイルの編集](###-Edit-config.json-/-config.jsonファイルの編集)
 
-  - [Change Apache port / Apacheのポート変更](### Change-Apache-port-/-Apacheのポート変更)
+  - [Change Apache port / Apacheのポート変更](###-Change-Apache-port-/-Apacheのポート変更)
 
-  - [Change Node.js port / Node.jsのポート変更](### Change-Node.js-port-/-Node.jsのポート変更)
+  - [Change Node.js port / Node.jsのポート変更](###-Change-Node.js-port-/-Node.jsのポート変更)
 
-  - [Run! / 実行！](### Run!-/-実行！)
+  - [Run! / 実行！](###-Run!-/-実行！)
 
-- [How it works / どのような仕組みか](## How-it-works-/-どのような仕組みか)
+- [How it works / どのような仕組みか](##-How-it-works-/-どのような仕組みか)
 
-- [Warning / 注意](## Warning-/-注意)
+- [Warning / 注意](##-Warning-/-注意)
 
 
 
@@ -66,8 +66,6 @@ config.jsonファイルを編集、ApacheやNode.jsのListenポートを変更�
 - port: このグループは何番ポートをListenしているか
   - (ex. 8443 8444 8080 80)
   - (443はproxy-server.jsが使用するため、"server"を"localhost"にする場合は設定してはいけません。)
-- server: このグループのサーバはどこにあるか
-  - (ex. localhost 127.0.0.1 XX.XX.XX.XX)
 - host: このグループに所属するホスト名（FQDN ドメイン名）と、そのSSL（TLS）証明書へのパス
     - hostname: ホスト名（FQDN ドメイン名）
       - (ex. node.example.com apache.example.com mydomain.com)
@@ -90,16 +88,57 @@ Ubuntuの場合、/etc/apache2/ports.confに記述されています。
 
 ビルドは必要ありません。
 
-foreverがインストールされていない場合は、インストールをおすすめします。
-
 実行にはsudoできる権限が必要です。これは、443ポートでListenしたり、サーバ証明書ファイルを開くために特権が必要だからです。
 
-    git clone https://github.com/pxdog/nodejs-with-apache
-    cd nodejs-with-apache
+foreverがインストールされていない場合は、インストールをおすすめします。
 
     # 便利な forever のインストール
     # foreverコマンドが使えるようになります
     sudo npm install forever -g
+
+以下にnpmを使う場合とgit cloneを使う場合の説明があります。
+
+#### using npm / npmを使う場合
+
+npm / yarnを使ってインストールすることができます
+
+    mkdir proxy
+    cd proxy
+    npm install nodejs-with-proxy
+
+app.jsとconfig.jsonを作成してください。
+app.jsは以下のように記述して使うことができます。
+
+    const nwa = require('nodejs-with-apache')
+    
+    if (process.argv.length !== 5) {
+      console.log('usage: sudo node app.js <config file: ./config.json>  <tls reject: "tlsreject" or whatever> <test mode: "test" or whatever>')
+      return 
+    }
+    
+    
+    const config = require(process.argv[2])
+    const tls_reject = process.argv[3] === 'tlsreject'? true: false
+    const test_mode = process.argv[4] === 'test'? true: false
+    
+    nwa.start({
+      config: config,
+      tls_reject: tls_reject,
+      test_mode: test_mode
+    })
+    
+app.jsとconfig.jsonが用意できたら、次のコマンドで実行できます。
+    
+    sudo node app.js ./config.json tlsreject test
+    # foreverを使う場合は以下のように実行できる
+    sudo forever start app.js ./config.json tlsreject test
+
+#### Using GitHub / GitHubを使う場合
+
+以下のようにコマンドを実行することで実行できます。
+
+    git clone https://github.com/pxdog/nodejs-with-apache
+    cd nodejs-with-apache
     
     # test / テスト リクエストされたホスト名・パスと、アクセスするクライアントのIP Addressを表示 
     # 以下の二つのコマンドは同じ
