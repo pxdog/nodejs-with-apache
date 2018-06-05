@@ -1,6 +1,6 @@
 {
   "name": "nodejs-with-apache",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Node.js, Apache and other servers can coexist via this proxy server.",
   "main": "proxy-server.js",
   "scripts": {
